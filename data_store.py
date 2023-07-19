@@ -1,11 +1,11 @@
 import sqlalchemy as sq
-from sqlalchemy.orm import declarative_base, Session
+from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import create_engine
 
 from config import db_url_object
 
-
 Base = declarative_base()
+Session = sessionmaker()
 
 
 class Viewed(Base):
@@ -15,25 +15,28 @@ class Viewed(Base):
 
 
 def add_user(engine, profile_id, worksheet_id):
-    with Session(engine) as session:
-        to_db = Viewed(profile_id=profile_id, worksheet_id=worksheet_id)
-        session.add(to_db)
-        session.commit()
+    session = Session(bind=engine)
+    to_db = Viewed(profile_id=profile_id, worksheet_id=worksheet_id)
+    session.add(to_db)
+    session.commit()
+    session.close()
 
 
 def check_user(engine, profile_id, worksheet_id):
-    with Session(engine) as session:
-        from_db = session.query(Viewed).filter(
-            Viewed.profile_id == profile_id,
-            Viewed.worksheet_id == worksheet_id
-        ).first()
-        return True if from_db else False
+    session = Session(bind=engine)
+    from_db = session.query(Viewed).filter(
+        Viewed.profile_id == profile_id,
+        Viewed.worksheet_id == worksheet_id
+    ).first()
+    session.close()
+    return True if from_db else False
 
 
 if __name__ == '__main__':
     engine = create_engine(db_url_object)
+    Session.configure(bind=engine)
     Base.metadata.create_all(engine)
 
-    add_user(engine, 2113, 124512)
-    res = check_user(engine, 2113, 124512)
+    add_user(engine, 2113, 12451200)
+    res = check_user(engine, 2113, 12451200)
     print(res)
